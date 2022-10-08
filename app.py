@@ -109,8 +109,7 @@ def sort_dict(markdict) :
   sortdict = dict([(k,v) for v,k in marklist])
   return sortdict
 
-def preprocess_string(text):
-  final_string = "".join(text.split("\n"))
+def spell_check(text):
   text = str(TextBlob(text).correct())
   text=text.strip()
   return text
@@ -297,83 +296,85 @@ def autocomplete():
 
 @app.route("/update", methods=["POST"])
 def add_keyword_and_cleantext():
-        print("START:", process_time())
-        try:
-          id = request.json['id']
-        except:
-          error={
-              "error": True,
-              "message": "id is mandatory parameter"
-          }
-          return error
-        try:
-          docs = documents_collection.find_one({"_id": ObjectId(id)})['documents']
-        except:
-          error={
-              "error": True,
-              "message": "Cannot Find any document with that id"
-          }
-          return error
-        print("RETRIEVED DOCUMENT FROM MONGO:", process_time())
-        try:
-          clean_t = ""
-          for doc in docs:
-            obj = s3.get_object(Bucket=bucket_name, Key=doc['url'].split("/")[-1])
-            print("RETRIEVED DOC FROM S3:", process_time())
-            fs = obj['Body'].read()            
-            pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
-            if(len(pdfReader.getPage(0).extractText()) == 0):
-              print("IF PDF NONREADABLE START:", process_time())
-              clean_t = clean_t + return_string_from_path(fs)
-              print("IF PDF NONREADABLE CLEANED:", process_time())
-            else:
-              print("IF PDF READABLE START:", process_time())
-              pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
-              for i in range(0,pdfReader.numPages):
-                clean_t = clean_t + pdfReader.getPage(i).extractText()
-              print("IF PDF READABLE END:", process_time())
-        except:
-          error={
-              "error": True,
-              "message": "Error while reading text"
-          }
-          return error
+  print("START:", process_time())
+  try:
+    id = request.json['id']
+  except:
+    error={
+        "error": True,
+        "message": "id is mandatory parameter"
+    }
+    return error
+  try:
+    docs = documents_collection.find_one({"_id": ObjectId(id)})['documents']
+  except:
+    error={
+        "error": True,
+        "message": "Cannot Find any document with that id"
+    }
+    return error
+  print("RETRIEVED DOCUMENT FROM MONGO:", process_time())
+  try:
+    ocr = False
+    clean_t = ""
+    for doc in docs:
+      obj = s3.get_object(Bucket=bucket_name, Key=doc['url'].split("/")[-1])
+      print("RETRIEVED DOC FROM S3:", process_time())
+      fs = obj['Body'].read()            
+      pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
+      if(len(pdfReader.getPage(0).extractText()) == 0):
+        ocr = True
+        print("IF PDF NONREADABLE START:", process_time())
+        clean_t = clean_t + return_string_from_path(fs)
+        print("IF PDF NONREADABLE CLEANED:", process_time())
+      else:        
+        print("IF PDF READABLE START:", process_time())
+        pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
+        for i in range(0,pdfReader.numPages):
+          clean_t = clean_t + pdfReader.getPage(i).extractText()
+        print("IF PDF READABLE END:", process_time())
+  except:
+    error={
+        "error": True,
+        "message": "Error while reading text"
+    }
+    return error
+    
+  if(request['spell'] || request['spell'] == True):
+    clean_t = spell_check(clean_t)
+    print("SPELL CHECK END:", process_time())
 
-        #try:
-          #one to be saved in database (only spell)
-          
-        #clean_t = preprocess_string(clean_t)
-        #print("PREPROCESSING END:", process_time())
+    #hyphen special keywords
+  keywords_manual = check_manual_keywords(clean_t)
+  print("CLEANING MANUAL KEYWORDS:", process_time())
 
-          #hyphen special keywords
-        keywords_manual = check_manual_keywords(clean_t)
-        print("CLEANING MANUAL KEYWORDS:", process_time())
+    # symbol remove + hyphen + stop + lemma+ eng
+  keyword_corpus = clean_clean_string(clean_t)
+  print("CLEANING START:", process_time())
 
-          # symbol remove + hyphen + stop + lemma+ eng
-        keyword_corpus = clean_clean_string(clean_t)
-        print("CLEANING START:", process_time())
+    #yake kewords
+  key = return_keyword(keyword_corpus, 30)
+  print("KEYWORDS END:", process_time())
 
-          #yake kewords
-        key = return_keyword(keyword_corpus, 30)
-        print("KEYWORDS END:", process_time())
-
-        keys = keywords_manual + key
-        try:
-          documents_collection.update_one({"_id": ObjectId(id)}, {
-              '$set': {"keywords": keys, "cleanText": clean_t}}, upsert= True)
-          success = {
-              "error": False,
-              "keywords": keys,
-              "message": "Database updated"
-          }
-          print("UPDATE END:", process_time())
-          return success
-        except:
-          error={
-              "error": True,
-              "message": "Error while updating Database"
-          }
-          return error
+  keys = keywords_manual + key
+  try:
+    documents_collection.update_one({"_id": ObjectId(id)}, {
+        '$set': {"keywords": keys, "cleanText": clean_t}}, upsert= True)
+    success = {
+        "error": False,
+        "ocr": ocr,
+        "cleanedText": clean_t,
+        "keywords": keys,
+        "message": "Database updated"
+    }
+    print("UPDATE END:", process_time())
+    return success
+  except:
+    error={
+        "error": True,
+        "message": "Error while updating Database"
+    }
+    return error
 
 
 if __name__ == '__main__':
