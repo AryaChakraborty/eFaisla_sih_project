@@ -121,16 +121,19 @@ def clean_clean_string(final_string):
   manual_keywords = ["annexure", "section", "article"]
   for item in manual_keywords:
       final_string.replace(item+" ", item+"-")
+  print("1:", process_time())
   final_string = re.sub(' +', ' ', final_string)
+  print("2:", process_time())
   #stop
   for item in final_stop:
     final_string = final_string.replace(item, "")
-  
+  print("3:", process_time())
   #lemma
   empty_list = []
   for token in nlp(final_string):
       empty_list.append(token.lemma_)
   final_string = ' '.join(map(str,empty_list))
+  print("4:", process_time())
   # final_string = str(TextBlob(final_string).correct())
 
   #eng
@@ -139,9 +142,11 @@ def clean_clean_string(final_string):
     if(zipf_frequency(word, 'en', wordlist='best') > 3.3):
       word_list_en.append(word)
   final_string = " ".join(word_list_en)
+  print("5:", process_time())
   
   final_string = re.sub(' +', ' ', final_string)
   final_string = str(TextBlob(final_string).correct())
+  print("6:", process_time())
   return final_string
 
 def make_ranking(docs, kw, order_no, ranking) :
