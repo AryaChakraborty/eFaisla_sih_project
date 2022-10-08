@@ -24,6 +24,9 @@ from nltk.tokenize import word_tokenize
 ## Loading the manually curated keywords from json file
 final_stop = json.load(open("stopwords.json", "r"))['stopwords']
 
+## Configuring Spacy
+nlp = spacy.load("en_core_web_sm")
+
 def return_string_from_path(file):# returns string from pdf path
     images = convert_from_bytes(file, size=800)
     list1 = []
