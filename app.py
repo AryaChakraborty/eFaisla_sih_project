@@ -27,6 +27,7 @@ import nltk
 from nltk.tokenize import word_tokenize
 from dotenv import load_dotenv
 from time import process_time
+from utils import message
 
 ## Getting ENV variables
 load_dotenv()
@@ -279,7 +280,7 @@ def search_keywords():
 
 @app.route("/", methods=["GET"])
 def default():
-  return "eFaisla API Up and Running..."
+  message.message(200, "Welcome to the eFaisla API")
 
 @app.route("/autocomplete", methods=["GET"])
 def autocomplete():
@@ -297,6 +298,7 @@ def autocomplete():
 @app.route("/update", methods=["POST"])
 def add_keyword_and_cleantext():
   print("START:", process_time())
+
   try:
     id = request.json['id']
   except:
