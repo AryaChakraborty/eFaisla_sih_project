@@ -280,7 +280,7 @@ def search_keywords():
 
 @app.route("/", methods=["GET"])
 def default():
-  message.message(200, "Welcome to the eFaisla API")
+  return message.message(200, "Welcome to the eFaisla API")
 
 @app.route("/autocomplete", methods=["GET"])
 def autocomplete():
