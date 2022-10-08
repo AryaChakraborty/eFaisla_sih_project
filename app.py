@@ -309,7 +309,7 @@ def autocomplete():
 
   data = {
     'keywords':unique_keywords,
-    'count':len(unique_keywords) 
+    'count':len(unique_keywords),
     'sort':sort
   }
 
