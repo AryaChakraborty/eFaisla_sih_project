@@ -294,6 +294,7 @@ post:
     - spell (true/false) : Spell check the extracted text
   responses:
     {Success}
+    - url (string) : URL of the document
     - spellCheck (true): if spell check is performed
     - ocr (true/false): if ocr is performed
     - keywords (list): list of keywords found in the document
@@ -361,6 +362,7 @@ def add_keyword_and_cleantext():
     )
 
     data = {      
+      "url": docs[0]['url'],
       "spellCheck": spell,
       "ocr": ocr,
       "cleanedText": clean_t,
