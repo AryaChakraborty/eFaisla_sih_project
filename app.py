@@ -26,6 +26,7 @@ from wordfreq import zipf_frequency
 import nltk
 from nltk.tokenize import word_tokenize
 from dotenv import load_dotenv
+from time import process_time
 
 ## Getting ENV variables
 load_dotenv()
@@ -291,6 +292,7 @@ def autocomplete():
 
 @app.route("/update", methods=["POST"])
 def add_keyword_and_cleantext():
+        print("START:", process_time())
         try:
           id = request.json['id']
         except:
@@ -307,18 +309,24 @@ def add_keyword_and_cleantext():
               "message": "Cannot Find any document with that id"
           }
           return error
+        print("RETRIEVED DOCUMENT FROM MONGO:", process_time())
         try:
           clean_t = ""
           for doc in docs:
             obj = s3.get_object(Bucket=bucket_name, Key=doc['url'].split("/")[-1])
-            fs = obj['Body'].read()
+            print("RETRIEVED DOC FROM S3:", process_time())
+            fs = obj['Body'].read()            
             pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
             if(len(pdfReader.getPage(0).extractText()) == 0):
+              print("IF PDF NONREADABLE START:", process_time())
               clean_t = clean_t + return_string_from_path(fs)
+              print("IF PDF NONREADABLE CLEANED:", process_time())
             else:
+              print("IF PDF READABLE START:", process_time())
               pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
               for i in range(0,pdfReader.numPages):
                 clean_t = clean_t + pdfReader.getPage(i).extractText()
+              print("IF PDF READABLE END:", process_time())
         except:
           error={
               "error": True,
@@ -329,15 +337,19 @@ def add_keyword_and_cleantext():
         #try:
           #one to be saved in database (only spell)
         clean_t = preprocess_string(clean_t)
+        print("PREPROCESSING END:", process_time())
 
           #hyphen special keywords
         keywords_manual = check_manual_keywords(clean_t)
+        print("CLEANING MANUAL KEYWORDS:", process_time())
 
           # symbol remove + hyphen + stop + lemma+ eng
         keyword_corpus = clean_clean_string(clean_t)
+        print("CLEANING START:", process_time())
 
           #yake kewords
         key = return_keyword(keyword_corpus, 30)
+        print("KEYWORDS END:", process_time())
 
         key = keywords_manual + key
         try:
@@ -347,6 +359,7 @@ def add_keyword_and_cleantext():
               "error": False,
               "message": "Database updated"
           }
+          print("UPDATE END:", process_time())
           return success
         except:
           error={
