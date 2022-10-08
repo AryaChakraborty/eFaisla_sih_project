@@ -2,7 +2,7 @@ def return_string_from_path(file):# returns string from pdf path
     images = convert_from_bytes(file, size=800)
     list1 = []
     for i, image in enumerate(images):
-    list1.append(pytesseract.image_to_string(image, lang='eng'))
+      list1.append(pytesseract.image_to_string(image, lang='eng'))
     string = " ".join(list1)
 
     return string.strip()
