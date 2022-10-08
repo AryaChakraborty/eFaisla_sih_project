@@ -305,7 +305,7 @@ def autocomplete():
   unique_keywords = unique_keywords[:limit]
 
   if sort.lower == 'true':
-    sorted(unique_keywords)
+    unique_keywords = sorted(unique_keywords)
 
   data = {
     'keywords':unique_keywords,
