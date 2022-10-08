@@ -28,6 +28,7 @@ from nltk.tokenize import word_tokenize
 from dotenv import load_dotenv
 from time import process_time
 from utils import message
+import helpers
 
 ## Getting ENV variables
 load_dotenv()
@@ -65,39 +66,6 @@ def convert_to_dict(list1): # converts list to dict
 
   return new_dict
 
-def check_manual_keywords(text):# checks if manual keywords are present
-  text = text.lower()
-  manual_keywords_check= []
-  li = word_tokenize(text)
-  manual_keywords = ["annexure", "section", "article"]
-
-  for i in range(0, len(li)):
-      if(li[i] in manual_keywords):
-        element_tbi = li[i]+"-"+li[i+1]
-        try:
-            numb = float(li[i+1])
-        except:
-          continue
-        if(element_tbi not in manual_keywords_check):
-          manual_keywords_check.append(element_tbi)
-        continue
-  return manual_keywords_check
-
-
-def return_string_from_path(file):# returns string from pdf path
-  images = convert_from_bytes(file, size=800)
-  list1 = []
-  for i, image in enumerate(images):
-    list1.append(pytesseract.image_to_string(image, lang='eng'))
-  string = " ".join(list1)
-  return string.strip()
-
-def return_keyword(para, number):#extracts keywords from para
-  kw_extractor = KeywordExtractor(lan="en", n=1, top=number)
-  list_of_keywords = kw_extractor.extract_keywords(text=para)
-  final_list = [itr[0] for itr in list_of_keywords]
-  return final_list
-
 def make_ranking(docs, kw, order_no, ranking) :
   for itr in docs.keys() : # for every document
     if kw in docs[itr] :
@@ -109,45 +77,6 @@ def sort_dict(markdict) :
   marklist = sorted((value, key) for (key,value) in markdict.items())
   sortdict = dict([(k,v) for v,k in marklist])
   return sortdict
-
-def spell_check(text):
-  text = str(TextBlob(text).correct())
-  text=text.strip()
-  return text
-
-def clean_clean_string(final_string):
-  final_string = final_string.lower()
-  final_string = re.sub(r'(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?', '', final_string)
-  manual_keywords = ["annexure", "section", "article"]
-  for item in manual_keywords:
-      final_string.replace(item+" ", item+"-")
-  print("1:", process_time())
-  final_string = re.sub(' +', ' ', final_string)
-  print("2:", process_time())
-  #stop
-  for item in final_stop:
-    final_string = final_string.replace(item, "")
-  print("3:", process_time())
-  #lemma
-  empty_list = []
-  for token in nlp(final_string):
-      empty_list.append(token.lemma_)
-  final_string = ' '.join(map(str,empty_list))
-  print("4:", process_time())
-  # final_string = str(TextBlob(final_string).correct())
-
-  #eng
-  word_list_en = []
-  for word in word_tokenize(final_string):
-    if(zipf_frequency(word, 'en', wordlist='best') > 3.3):
-      word_list_en.append(word)
-  final_string = " ".join(word_list_en)
-  print("5:", process_time())
-  
-  final_string = re.sub(' +', ' ', final_string)
-  final_string = str(TextBlob(final_string).correct())
-  print("6:", process_time())
-  return final_string
 
 def make_ranking(docs, kw, order_no, ranking) :
   for itr in docs.keys() : # for every document
@@ -277,132 +206,169 @@ def search_keywords():
       'docs' : top_n_ranked_final
       }
 
-
+"""
+Testing Route
+-----
+get:
+  description: Testing Route to check if the server is running
+  responses:
+    {Success}
+    message (string): success message
+"""
 @app.route("/", methods=["GET"])
 def default():
   return message.message(200, "Welcome to the eFaisla API")
 
+
+"""
+Autocomplete Route
+-----
+get:
+  description: Get all the keywords for autocomplete suggestions
+  security:
+    - ApiKeyAuth: []
+  request:
+    {Optional}
+    - limit (int) : Number of keywords to be returned
+    - sort (true/false): Sort the keywords in ascending order
+  responses:
+    {Success}
+    - keywords (list) : List of keywords
+    - count (int) : Number of keywords
+    - sort (true/false) : Sort the keywords in ascending order
+    - limit (int) : Limit if specified
+    {Error}
+    - message (string) : Error message    
+"""
 @app.route("/autocomplete", methods=["GET"])
 def autocomplete():
-  limit = -1
-  sort = False
+  try:
+    limit = -1
+    sort = False
 
-  ## get the query parameter  
-  if 'limit' in request.args:
-    limit = int(request.args['limit'])
+    ## get the query parameter  
+    if 'limit' in request.args:
+      limit = int(request.args['limit'])
 
-  if 'sort' in request.args:
-    sort = str(request.args['sort'])
+    if 'sort' in request.args:
+      sort = str(request.args['sort'])
 
-  cursor = documents_collection.find({"keywords": { '$exists': True }})
-  items = list(cursor)
-  total_keywords = []
-  c = 0
-  for i in items:
-    total_keywords += i['keywords']  
+    cursor = documents_collection.find({"keywords": { '$exists': True }})
+    items = list(cursor)
+    total_keywords = []
+    c = 0
+    for i in items:
+      total_keywords += i['keywords']  
 
-  unique_keywords = list(set(total_keywords))
-  unique_keywords = unique_keywords[:limit]
+    unique_keywords = list(set(total_keywords))
+    unique_keywords = unique_keywords[:limit]
 
-  if sort.lower() == 'true':
-    unique_keywords = sorted(unique_keywords)
+    if sort.lower() == 'true':
+      unique_keywords = sorted(unique_keywords)
 
-  data = {
-    'keywords':unique_keywords,
-    'count':len(unique_keywords),
-    'sort':sort
-  }
+    data = {
+      'keywords':unique_keywords,
+      'count':len(unique_keywords),
+      'sort':sort
+    }
 
-  if limit != -1:
-    data['limit'] = limit
+    if limit != -1:
+      data['limit'] = limit
 
-  return message.message_custom(data, 200, "Keywords for autocomplete") 
+    return message.message_custom(data, 200, "Keywords for autocomplete") 
+  except Exception as e:
+    return message.message_error(500, e, "Internal Server Error")
 
+
+"""
+Update Keywords Route
+-----
+post:
+  description: Preprocess and update the clean text and keywords for a document
+  security:
+    - ApiKeyAuth: []
+  request:
+    {Mandatory}
+    - id (string) : MongoDB ID of the document
+    {Optional}
+    - spell (true/false) : Spell check the extracted text
+  responses:
+    {Success}
+    - spellCheck (true): if spell check is performed
+    - ocr (true/false): if ocr is performed
+    - keywords (list): list of keywords found in the document
+    - cleanText (string): cleaned extracted text from the document
+    {Error}
+    - message (string) : Error message
+"""
 @app.route("/update", methods=["POST"])
 def add_keyword_and_cleantext():
-  print("START:", process_time())
+  spell = False
+  ocr = False
 
   try:
     id = request.json['id']
   except:
-    error={
-        "error": True,
-        "message": "id is mandatory parameter"
-    }
-    return error
+    return message.message_error(400, "ID is a mandatory field", "Bad Request")
+
+  if 'spell' in request.json and request.json['spell'].lower() == 'true':
+    spell = True
+
   try:
     docs = documents_collection.find_one({"_id": ObjectId(id)})['documents']
   except:
-    error={
-        "error": True,
-        "message": "Cannot Find any document with that id"
-    }
-    return error
-  print("RETRIEVED DOCUMENT FROM MONGO:", process_time())
-  try:
-    ocr = False
+    return message.message_error(404, "Document not found", "Not Found")
+  
+  try:    
     clean_t = ""
     for doc in docs:
       obj = s3.get_object(Bucket=bucket_name, Key=doc['url'].split("/")[-1])
-      print("RETRIEVED DOC FROM S3:", process_time())
+
       fs = obj['Body'].read()            
       pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
+
       if(len(pdfReader.getPage(0).extractText()) == 0):
         ocr = True
-        print("IF PDF NONREADABLE START:", process_time())
-        clean_t = clean_t + return_string_from_path(fs)
-        print("IF PDF NONREADABLE CLEANED:", process_time())
-      else:        
-        print("IF PDF READABLE START:", process_time())
+        clean_t = clean_t + helpers.return_string_from_path(fs)
+      else:                
         pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
         for i in range(0,pdfReader.numPages):
           clean_t = clean_t + pdfReader.getPage(i).extractText()
-        print("IF PDF READABLE END:", process_time())
   except:
-    error={
-        "error": True,
-        "message": "Error while reading text"
-    }
-    return error
+    return message.message_error(500, "Error in reading the file", "Internal Server Error")
     
-  spell = False
-  if('spell' in request.json and request.json['spell'].lower() == 'true'):
-    spell = True
-    clean_t = spell_check(clean_t)
-    print("SPELL CHECK END:", process_time())
+  
+  if spell == True:
+    clean_t = helpers.spell_check(clean_t)
 
-    #hyphen special keywords
-  keywords_manual = check_manual_keywords(clean_t)
-  print("CLEANING MANUAL KEYWORDS:", process_time())
+  #hyphen special keywords
+  keywords_manual = helpers.check_manual_keywords(clean_t)
 
-    # symbol remove + hyphen + stop + lemma+ eng
-  keyword_corpus = clean_clean_string(clean_t)
-  print("CLEANING START:", process_time())
+  # symbol remove + hyphen + stop + lemma+ eng
+  keyword_corpus = helpers.distill_string(clean_t)  
 
-    #yake kewords
-  key = return_keyword(keyword_corpus, 30)
-  print("KEYWORDS END:", process_time())
+  #yake kewords
+  key = helpers.return_keyword(keyword_corpus, 30)
 
   keys = keywords_manual + key
   try:
-    documents_collection.update_one({"_id": ObjectId(id)}, {
-        '$set': {"keywords": keys, "cleanText": clean_t}}, upsert= True)
-    success = {
-        "error": False,
-        "spellCheck": spell,
-        "ocr": ocr,
-        "cleanedText": clean_t,
-        "keywords": keys,
-        "message": "Database updated"
+    documents_collection.update_one(
+      {"_id": ObjectId(id)}, 
+      {
+        '$set': {"keywords": keys, "cleanText": clean_t}
+      }, 
+      upsert= True
+    )
+
+    data = {      
+      "spellCheck": spell,
+      "ocr": ocr,
+      "cleanedText": clean_t,
+      "keywords": keys,      
     }
-    print("UPDATE END:", process_time())
-    return success
-  except:
-    error={
-        "error": True,
-        "message": "Error while updating Database"
-    }
-    return error
+    return message.message_custom(data, 200, "Database updated")    
+  except Exception as e:
+    return message.message_error(500, e, "Internal Server Error")
 
 
 if __name__ == '__main__':

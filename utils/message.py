@@ -10,7 +10,7 @@ def message(status_code: int, message: str):
     return jsonify(data), status_code
 
 ## Error Message response
-def message_error(status_code: int, error: str, message: str):
+def message_error(status_code: int, error, message: str):
     data = {
         "status_code": status_code,
         "message": message,
