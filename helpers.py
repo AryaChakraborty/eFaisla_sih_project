@@ -1,3 +1,26 @@
+from io import BytesIO
+import pytesseract
+from PIL import ImageEnhance, ImageFilter, Image
+import re
+from yake import KeywordExtractor
+from pdf2image import convert_from_path, convert_from_bytes
+from pdf2image.exceptions import (
+ PDFInfoNotInstalledError,
+ PDFPageCountError,
+ PDFSyntaxError
+)
+from yake import KeywordExtractor
+import re
+import json
+import os
+import spacy
+from textblob import TextBlob
+import PyPDF2
+import io
+from wordfreq import zipf_frequency
+import nltk
+from nltk.tokenize import word_tokenize
+
 def return_string_from_path(file):# returns string from pdf path
     images = convert_from_bytes(file, size=800)
     list1 = []
