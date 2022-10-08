@@ -284,16 +284,34 @@ def default():
 
 @app.route("/autocomplete", methods=["GET"])
 def autocomplete():
-  cursor = documents_collection.find({"keywords": { '$exists': True} })
+  ## get the query parameter
+  if 'limit' in request.args:
+    limit = int(request.args['limit'])
+  else:
+    limit = -1
+
+  cursor = documents_collection.find({"keywords": { '$exists': True }})
   items = list(cursor)
   total_keywords = []
+  c = 0
   for i in items:
+    if limit != -1 and c > limit:
+      break
+
+    c += 1
     total_keywords += i['keywords']
+
   unique_keywords = list(set(total_keywords))
 
-  return {
-      'keywords':unique_keywords
+  data = {
+    'keywords':unique_keywords,
+    'count':len(unique_keywords)    
   }
+
+  if limit != -1:
+    data['limit'] = limit
+
+  return message.message_custom(data, 200, "Keywords for autocomplete") 
 
 @app.route("/update", methods=["POST"])
 def add_keyword_and_cleantext():
