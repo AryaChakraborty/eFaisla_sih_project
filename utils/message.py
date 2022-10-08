@@ -1,3 +1,5 @@
+from flask import jsonify
+
 ## Default message response
 def message(status_code: int, message: str):
     data = {
