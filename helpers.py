@@ -21,6 +21,9 @@ from wordfreq import zipf_frequency
 import nltk
 from nltk.tokenize import word_tokenize
 
+## Loading the manually curated keywords from json file
+final_stop = json.load(open("stopwords.json", "r"))['stopwords']
+
 def return_string_from_path(file):# returns string from pdf path
     images = convert_from_bytes(file, size=800)
     list1 = []
