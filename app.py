@@ -341,7 +341,7 @@ def add_keyword_and_cleantext():
     return error
     
   spell = False
-  if('spell' in request.json and request.json['spell'] == True):
+  if('spell' in request.json and lower(request.json['spell']) == 'true'):
     spell = True
     clean_t = spell_check(clean_t)
     print("SPELL CHECK END:", process_time())
