@@ -1,3 +1,4 @@
+## Imports
 from flask import Flask, app, request
 import boto3
 from io import BytesIO
@@ -26,6 +27,7 @@ import nltk
 from nltk.tokenize import word_tokenize
 from dotenv import load_dotenv
 
+## Getting ENV variables
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 AWS_REGION = os.getenv("AWS_REGION")
@@ -35,20 +37,24 @@ BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 app = Flask(__name__)
 
+## Connecting to MongoDB
 client = pym.MongoClient(MONGO_URI)
-nlp = spacy.load("en_core_web_sm")
-#connect
 db = client["test"]
 documents_collection = db["documents"]
 
+## Configuring Spacy
+nlp = spacy.load("en_core_web_sm")
+
+## Configuring Boto3 to read from S3
 bucket_name = BUCKET_NAME
 s3=boto3.client("s3", region_name=AWS_REGION, aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
+## Loading the manually curated keywords from json file
 final_stop = json.load(open("stopwords.json", "r"))['stopwords']
 
 #kw_extractor = KeywordExtractor(lan="en", n=1, top=5)
 
-def convert_to_dict(list1) :
+def convert_to_dict(list1): # converts list to dict
   new_dict = {}
   for itr in list1 :
     new_key = (int)(itr['_id'])
@@ -57,7 +63,7 @@ def convert_to_dict(list1) :
 
   return new_dict
 
-def check_manual_keywords(text):
+def check_manual_keywords(text):# checks if manual keywords are present
   text = text.lower()
   manual_keywords_check= []
   li = word_tokenize(text)
@@ -76,7 +82,7 @@ def check_manual_keywords(text):
   return manual_keywords_check
 
 
-def return_string_from_path(file): # gets para from img
+def return_string_from_path(file):# returns string from pdf path
   images = convert_from_bytes(file, size=800)
   list1 = []
   for i, image in enumerate(images):
@@ -84,7 +90,7 @@ def return_string_from_path(file): # gets para from img
   string = " ".join(list1)
   return string.strip()
 
-def return_keyword(para, number) : # extracts keywords from para
+def return_keyword(para, number):#extracts keywords from para
   kw_extractor = KeywordExtractor(lan="en", n=1, top=number)
   list_of_keywords = kw_extractor.extract_keywords(text=para)
   final_list = [itr[0] for itr in list_of_keywords]
@@ -129,8 +135,8 @@ def clean_clean_string(final_string):
   #eng
   word_list_en = []
   for word in word_tokenize(final_string):
-     if(zipf_frequency(word, 'en', wordlist='best') > 3.3):
-       word_list_en.append(word)
+    if(zipf_frequency(word, 'en', wordlist='best') > 3.3):
+      word_list_en.append(word)
   final_string = " ".join(word_list_en)
   
   final_string = re.sub(' +', ' ', final_string)
