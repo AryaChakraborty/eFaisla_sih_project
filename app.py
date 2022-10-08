@@ -340,7 +340,9 @@ def add_keyword_and_cleantext():
     }
     return error
     
+  spell = False
   if('spell' in request.json and request.json['spell'] == True):
+    spell = True
     clean_t = spell_check(clean_t)
     print("SPELL CHECK END:", process_time())
 
@@ -362,6 +364,7 @@ def add_keyword_and_cleantext():
         '$set': {"keywords": keys, "cleanText": clean_t}}, upsert= True)
     success = {
         "error": False,
+        "spellCheck": spell,
         "ocr": ocr,
         "cleanedText": clean_t,
         "keywords": keys,
