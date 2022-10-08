@@ -292,7 +292,7 @@ def autocomplete():
     limit = int(request.args['limit'])
 
   if 'sort' in request.args:
-    sort = bool(request.args['sort'])
+    sort = str(request.args['sort'])
 
   cursor = documents_collection.find({"keywords": { '$exists': True }})
   items = list(cursor)
@@ -304,7 +304,7 @@ def autocomplete():
   unique_keywords = list(set(total_keywords))
   unique_keywords = unique_keywords[:limit]
 
-  if sort:
+  if sort.lower == 'true':
     sorted(unique_keywords)
 
   data = {
