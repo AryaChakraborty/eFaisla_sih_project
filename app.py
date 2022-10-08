@@ -341,8 +341,9 @@ def add_keyword_and_cleantext():
 
         #try:
           #one to be saved in database (only spell)
-        clean_t = preprocess_string(clean_t)
-        print("PREPROCESSING END:", process_time())
+          
+        #clean_t = preprocess_string(clean_t)
+        #print("PREPROCESSING END:", process_time())
 
           #hyphen special keywords
         keywords_manual = check_manual_keywords(clean_t)
@@ -356,12 +357,13 @@ def add_keyword_and_cleantext():
         key = return_keyword(keyword_corpus, 30)
         print("KEYWORDS END:", process_time())
 
-        key = keywords_manual + key
+        keys = keywords_manual + key
         try:
           documents_collection.update_one({"_id": ObjectId(id)}, {
-              '$set': {"keywords": key, "cleanText": clean_t}}, upsert= True)
+              '$set': {"keywords": keys, "cleanText": clean_t}}, upsert= True)
           success = {
               "error": False,
+              "keywords": keys,
               "message": "Database updated"
           }
           print("UPDATE END:", process_time())
