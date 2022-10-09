@@ -285,7 +285,7 @@ def search_keywords():
       else :
         helper_ranking.make_ranking(docs, itr, 1, ranking)
 
-    sorted_ranking = helper_ranking.sort_dict(ranking)
+    sorted_ranking = helper_ranking.sort_dict(ranking, top)
     top_n_ranked_docs = (list(sorted_ranking.keys()))[:top]
 
     top_n_ranked_final = []
