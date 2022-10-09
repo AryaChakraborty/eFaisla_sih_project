@@ -28,7 +28,8 @@ from nltk.tokenize import word_tokenize
 from dotenv import load_dotenv
 from time import process_time
 from utils import message
-import helpers
+from helpers import update as helper_update
+from helpers import ranking as helper_ranking
 
 ## Getting ENV variables
 load_dotenv()
@@ -54,157 +55,6 @@ s3=boto3.client("s3", region_name=AWS_REGION, aws_access_key_id=AWS_ACCESS_KEY_I
 
 ## Loading the manually curated keywords from json file
 final_stop = json.load(open("stopwords.json", "r"))['stopwords']
-
-#kw_extractor = KeywordExtractor(lan="en", n=1, top=5)
-
-def convert_to_dict(list1): # converts list to dict
-  new_dict = {}
-  for itr in list1 :
-    new_key = (int)(itr['_id'])
-    new_val = itr['keywords']
-    new_dict[new_key] = new_val
-
-  return new_dict
-
-def make_ranking(docs, kw, order_no, ranking) :
-  for itr in docs.keys() : # for every document
-    if kw in docs[itr] :
-      ranking[itr] += ((docs[itr]).index(kw))*order_no
-    else :
-      ranking[itr] += 100000 # > 13
-
-def sort_dict(markdict) :
-  marklist = sorted((value, key) for (key,value) in markdict.items())
-  sortdict = dict([(k,v) for v,k in marklist])
-  return sortdict
-
-def make_ranking(docs, kw, order_no, ranking) :
-  for itr in docs.keys() : # for every document
-    if kw in docs[itr] :
-      ranking[itr] += ((docs[itr]).index(kw))*order_no
-    else :
-      ranking[itr] += 100000 # > 13
-
-def sort_dict(markdict) :
-  marklist = sorted((value, key) for (key,value) in markdict.items())
-  sortdict = dict([(k,v) for v,k in marklist])
-  return sortdict
-
-def convert_to_dict(list1) :
-  new_dict = {}
-  for itr in list1 :
-    new_key = (int)(itr['_id'])
-    new_val = itr['keywords']
-    new_dict[new_key] = new_val
-
-  return new_dict
-
-@app.route("/search", methods=["POST"])
-def search_keywords():
-  data = request.json
-
-  # try:
-  #  documents = data["documents"]
-  #   documents = convert_to_dict(documents)
-  #   search_key = data["search_key"]
-  # except:
-  #  error={
-    #    "Error": True,
-     #   "Message": "documents and search_key are mandatory parameters"
-    #}
-
-#    return error
- # try:
-  # top = data["top"]
-  #except:
-   #top = 5
-  #try:
-  # order_matters = data["order_matters"]
-  #except:
-  # order_matters = True 
-  #ranking = {}
-
-  #try:
-   # for itr in documents.keys() :
-    #  ranking[itr] = 0
-
-    #for itr in search_key :
-     # if order_matters == True :
-      #  make_ranking(documents, itr, search_key.index(itr), ranking)
-      #else :
-       # make_ranking(documents, itr, 1, ranking)
-
-    #sorted_ranking = sort_dict(ranking)
-    #top_n_ranked_docs = (list(sorted_ranking.keys()))[:top]
-
- #   message = {
-  #      "error": False,
-   #     "topN": top_n_ranked_docs
-    #}
-    #return message
-  #except:
-   # error={
-    #    "Error": True
-    #}
-
-    #return error
-  try:
-    search_key = data["search_key"]  
-  except:
-    error={
-        "error": True,
-        "message": "search_key is mandatory field"
-    }
-
-    return error
-  
-  try:
-    top = data["top"]  
-    order_matters = data["order_matters"]
-  except:
-    top = 5
-    order_matters = True
-  
-  keywords_dataset_cursor = documents_collection.find({"keywords": { '$exists': True} })
-  items = list(keywords_dataset_cursor)
-
-  docs = {}
-  all_docs = {}
-  for i in items:
-    curr_key = str(i['_id'])
-    docs[curr_key] = i['keywords']
-    all_docs[curr_key] = i
-    all_docs[curr_key]["_id"] = str(all_docs[curr_key]["_id"] )
-    for elements in all_docs[curr_key]['documents']:
-      elements["_id"] = str(elements["_id"] )
-
-  ranking = {}
-  for itr in docs.keys() :
-    ranking[itr] = 0
-
-  try:
-    for itr in search_key :
-      if order_matters == True :
-        make_ranking(docs, itr, search_key.index(itr), ranking)
-      else :
-        make_ranking(docs, itr, 1, ranking)
-
-    sorted_ranking = sort_dict(ranking)
-    top_n_ranked_docs = (list(sorted_ranking.keys()))[:top]
-
-    top_n_ranked_final = []
-    for itr in top_n_ranked_docs :
-      top_n_ranked_final.append(all_docs[itr])
-  except:
-    error = {
-        "error": True,
-        "message": "Error in creating Ranking"
-    }
-    return error
-
-  return{
-      'docs' : top_n_ranked_final
-      }
 
 """
 Testing Route
@@ -330,7 +180,7 @@ def add_keyword_and_cleantext():
 
       if(len(pdfReader.getPage(0).extractText()) == 0):
         ocr = True
-        clean_t = clean_t + helpers.return_string_from_path(fs)
+        clean_t = clean_t + helper_update.return_string_from_path(fs)
       else:                
         pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
         for i in range(0,pdfReader.numPages):
@@ -340,16 +190,16 @@ def add_keyword_and_cleantext():
     
   
   if spell == True:
-    clean_t = helpers.spell_check(clean_t)
+    clean_t = helper_update.spell_check(clean_t)
 
   #hyphen special keywords
-  keywords_manual = helpers.check_manual_keywords(clean_t)
+  keywords_manual = helper_update.check_manual_keywords(clean_t)
 
   # symbol remove + hyphen + stop + lemma+ eng
-  keyword_corpus = helpers.distill_string(clean_t)  
+  keyword_corpus = helper_update.distill_string(clean_t)  
 
   #yake kewords
-  key = helpers.return_keyword(keyword_corpus, 30)
+  key = helper_update.return_keyword(keyword_corpus, 30)
 
   keys = keywords_manual + key
   try:
@@ -371,6 +221,87 @@ def add_keyword_and_cleantext():
     return message.message_custom(data, 200, "Database updated")    
   except Exception as e:
     return message.message_error(500, e, "Internal Server Error")
+
+
+"""
+Search Route
+-----
+post:
+  description: Search for a keyword in the database
+  security:
+  - ApiKeyAuth: []
+  request:
+    {Mandatory}
+    - search_key (list(string)) : Keyword to be searched
+    {Optional}
+    - top (int) : Number of documents to be returned
+    - order_matters (true/false) : If the order of the keywords entered matters
+  responses:
+    {Success}
+    - docs:
+      - {Schema of the document} (array of objects): List of documents
+    - count (int) : Number of documents
+    {Error}
+    - message (string) : Error message
+"""
+@app.route("/search", methods=["POST"])
+def search_keywords():
+  top = 5
+  order_matters = False
+
+  data = request.json
+  try:
+    search_key = data["search_key"]  
+  except:
+    return message.message_error(400, "search_key is mandatory field", "Bad Request")
+  
+  if 'top' in data:    
+    top = data["top"]  
+  if 'order_matters' in data and data["order_matters"].lower() == 'true':
+    order_matters = data["order_matters"]
+    
+  
+  keywords_dataset_cursor = documents_collection.find({"keywords": { '$exists': True} })
+  items = list(keywords_dataset_cursor)
+
+  docs = {}
+  all_docs = {}
+  for i in items:
+    curr_key = str(i['_id'])
+    docs[curr_key] = i['keywords']
+    all_docs[curr_key] = i
+    all_docs[curr_key]["_id"] = str(all_docs[curr_key]["_id"] )
+    for elements in all_docs[curr_key]['documents']:
+      elements["_id"] = str(elements["_id"] )
+
+  ranking = {}
+  for itr in docs.keys() :
+    ranking[itr] = 0
+
+  try:
+    for itr in search_key :
+      if order_matters == True:
+        helper_ranking.make_ranking(docs, itr, search_key.index(itr), ranking)
+      else :
+        helper_ranking.make_ranking(docs, itr, 1, ranking)
+
+    sorted_ranking = helper_ranking.sort_dict(ranking)
+    top_n_ranked_docs = (list(sorted_ranking.keys()))[:top]
+
+    top_n_ranked_final = []
+    for itr in top_n_ranked_docs :
+      top_n_ranked_final.append(all_docs[itr])
+
+    if len(top_n_ranked_final) == 0:
+      return message.message_error(404, "No documents found", "Not Found")
+      
+    data = {
+      "docs": top_n_ranked_final,
+      "count": len(top_n_ranked_final)
+    }
+    return message.message_custom(data, 200, "Successefully searched with the keyword")
+  except:
+    return message.message_error(500, "Error in searching", "Internal Server Error")
 
 
 if __name__ == '__main__':
