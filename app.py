@@ -301,8 +301,9 @@ def search_keywords():
       "count": len(top_n_ranked_final)
     }
     return message.message_custom(data, 200, "Successefully searched with the keyword")
-  except:
-    return message.message_error(500, "Error in searching", "Internal Server Error")
+  except Exception as e:
+    return message.message_error(500, e, "Internal Server Error")
+    #return message.message_error(500, "Error in searching", "Internal Server Error")
 
 
 if __name__ == '__main__':
