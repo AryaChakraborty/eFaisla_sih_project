@@ -14,9 +14,7 @@ def make_ranking(docs, kw, order_no, ranking) :
         else :
             ranking[itr] += 100000 # > 13
 
-def sort_dict(markdict, search_length):    
-    new_dict = dict([((key, val) for (key, val) in markdict.items() if key < search_length*100000)])
-
+def sort_dict(markdict):    
     marklist = sorted((value, key) for (key,value) in new_dict.items())
     sortdict = dict([(k,v) for v,k in marklist])
     return sortdict
