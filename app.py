@@ -278,31 +278,31 @@ def search_keywords():
   for itr in docs.keys() :
     ranking[itr] = 0
 
-  try:
-    for itr in search_key :
-      if order_matters == True:
-        helper_ranking.make_ranking(docs, itr, search_key.index(itr), ranking)
-      else :
-        helper_ranking.make_ranking(docs, itr, 1, ranking)
+  #try:
+  for itr in search_key :
+    if order_matters == True:
+      helper_ranking.make_ranking(docs, itr, search_key.index(itr), ranking)
+    else :
+      helper_ranking.make_ranking(docs, itr, 1, ranking)
 
-    sorted_ranking = helper_ranking.sort_dict(ranking)
-    top_n_ranked_docs = (list(sorted_ranking.keys()))[:top]
+  sorted_ranking = helper_ranking.sort_dict(ranking)
+  top_n_ranked_docs = (list(sorted_ranking.keys()))[:top]
 
-    top_n_ranked_final = []
-    for itr in top_n_ranked_docs :
-      if all_docs[itr] < 100000*len(search_key):
-        top_n_ranked_final.append(all_docs[itr])
+  top_n_ranked_final = []
+  for itr in top_n_ranked_docs :
+    if all_docs[itr] < 100000*len(search_key):
+      top_n_ranked_final.append(all_docs[itr])
 
-    if len(top_n_ranked_final) == 0:
-      return message.message_error(404, "No documents found", "Not Found")
-      
-    data = {
-      "docs": top_n_ranked_final,
-      "count": len(top_n_ranked_final)
-    }
-    return message.message_custom(data, 200, "Successefully searched with the keyword")
-  except Exception as e:
-    return message.message_error(500, e, "Internal Server Error")
+  if len(top_n_ranked_final) == 0:
+    return message.message_error(404, "No documents found", "Not Found")
+    
+  data = {
+    "docs": top_n_ranked_final,
+    "count": len(top_n_ranked_final)
+  }
+  return message.message_custom(data, 200, "Successefully searched with the keyword")
+  # except Exception as e:
+  #   return message.message_error(500, e, "Internal Server Error")
     #return message.message_error(500, "Error in searching", "Internal Server Error")
 
 
