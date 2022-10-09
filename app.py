@@ -247,7 +247,7 @@ post:
 @app.route("/search", methods=["POST"])
 def search_keywords():
   top = 5
-  order_matters = False
+  order_matters = True
 
   data = request.json
   try:
@@ -257,8 +257,8 @@ def search_keywords():
   
   if 'top' in data:    
     top = data["top"]  
-  if 'order_matters' in data and data["order_matters"].lower() == 'true':
-    order_matters = data["order_matters"]
+  if 'order_matters' in data and data["order_matters"].lower() == 'false':
+    order_matters = False
     
   
   keywords_dataset_cursor = documents_collection.find({"keywords": { '$exists': True} })
