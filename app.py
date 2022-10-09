@@ -290,7 +290,8 @@ def search_keywords():
 
     top_n_ranked_final = []
     for itr in top_n_ranked_docs :
-      top_n_ranked_final.append(all_docs[itr])
+      if all_docs[itr] < 100000*len(search_key):
+        top_n_ranked_final.append(all_docs[itr])
 
     if len(top_n_ranked_final) == 0:
       return message.message_error(404, "No documents found", "Not Found")
