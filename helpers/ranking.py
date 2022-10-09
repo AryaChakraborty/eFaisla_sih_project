@@ -9,10 +9,10 @@ def convert_to_dict(list1): # converts list to dict
 
 def make_ranking(docs, kw, order_no, ranking) :
     for itr in docs.keys() : # for every document
-    if kw in docs[itr] :
-        ranking[itr] += ((docs[itr]).index(kw))*order_no
-    else :
-        ranking[itr] += 100000 # > 13
+        if kw in docs[itr] :
+            ranking[itr] += ((docs[itr]).index(kw))*order_no
+        else :
+            ranking[itr] += 100000 # > 13
 
 def sort_dict(markdict) :
     marklist = sorted((value, key) for (key,value) in markdict.items())
