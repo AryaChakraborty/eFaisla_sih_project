@@ -15,6 +15,6 @@ def make_ranking(docs, kw, order_no, ranking) :
             ranking[itr] += 100000 # > 13
 
 def sort_dict(markdict):    
-    marklist = sorted((value, key) for (key,value) in new_dict.items())
+    marklist = sorted((value, key) for (key,value) in markdict.items())
     sortdict = dict([(k,v) for v,k in marklist])
     return sortdict
