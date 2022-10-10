@@ -30,6 +30,7 @@ from time import process_time
 from utils import message
 from helpers import update as helper_update
 from helpers import ranking as helper_ranking
+import logging
 
 ## Getting ENV variables
 load_dotenv()
@@ -40,6 +41,8 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 app = Flask(__name__)
+
+logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
 ## Connecting to MongoDB
 client = pym.MongoClient(MONGO_URI)
@@ -302,7 +305,6 @@ def search_keywords():
     return message.message_custom(data, 200, "Successefully searched with the keyword")
   except Exception as e:
     return message.message_error(500, e, "Internal Server Error")
-    #return message.message_error(500, "Error in searching", "Internal Server Error")
 
 
 if __name__ == '__main__':
