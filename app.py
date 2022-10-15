@@ -10,9 +10,9 @@ import re
 from yake import KeywordExtractor
 from pdf2image import convert_from_path, convert_from_bytes
 from pdf2image.exceptions import (
- PDFInfoNotInstalledError,
- PDFPageCountError,
- PDFSyntaxError
+  PDFInfoNotInstalledError,
+  PDFPageCountError,
+  PDFSyntaxError
 )
 from yake import KeywordExtractor
 import re
@@ -40,8 +40,10 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 BUCKET_NAME = os.getenv("BUCKET_NAME")
 
-app = Flask(__name__)
+## Creating Flask app
+app = Flask(__name__) 
 
+## Configuring Logging for the app
 logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
 ## Connecting to MongoDB
@@ -99,23 +101,30 @@ def autocomplete():
     limit = -1
     sort = False
 
-    ## get the query parameter  
+    ## getting the query parameters
     if 'limit' in request.args:
       limit = int(request.args['limit'])
 
     if 'sort' in request.args:
       sort = str(request.args['sort'])
 
+    # getting all the documents with keywords
     cursor = documents_collection.find({"keywords": { '$exists': True }})
     items = list(cursor)
     total_keywords = []
     c = 0
+
+    ## getting all the keywords from the documents
     for i in items:
       total_keywords += i['keywords']  
 
+    ## removing duplicates
     unique_keywords = list(set(total_keywords))
-    unique_keywords = unique_keywords[:limit]
 
+    ## limiting the number of keywords
+    unique_keywords = unique_keywords[:limit] 
+
+    ## sorting the keywords if specified
     if sort.lower() == 'true':
       unique_keywords = sorted(unique_keywords)
 
@@ -161,14 +170,19 @@ def add_keyword_and_cleantext():
   ocr = False
 
   try:
+    ## getting the query parameters
     id = request.json['id']
   except:
+    ## returning error if id is not specified
     return message.message_error(400, "ID is a mandatory field", "Bad Request")
 
+
+  ## checking if spell check is specified
   if 'spell' in request.json and request.json['spell'].lower() == 'true':
     spell = True
 
   try:
+    ## fetching the document from the database
     docs = documents_collection.find_one({"_id": ObjectId(id)})['documents']
   except:
     return message.message_error(404, "Document not found", "Not Found")
@@ -176,36 +190,45 @@ def add_keyword_and_cleantext():
   try:    
     clean_t = ""
     for doc in docs:
+      ## Fetching the document from S3 bucket
       obj = s3.get_object(Bucket=bucket_name, Key=doc['url'].split("/")[-1])
 
+      ## Reading the fetched document 
       fs = obj['Body'].read()            
       pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
 
+      ## Checking if the document is readable or not
       if(len(pdfReader.getPage(0).extractText()) == 0):
+        ## If not readable, performing OCR Detection
         ocr = True
         clean_t = clean_t + helper_update.return_string_from_path(fs)
-      else:                
+      else:
+        ## If readable, extracting the text                
         pdfReader = PyPDF2.PdfFileReader(io.BytesIO(fs)) 
         for i in range(0,pdfReader.numPages):
           clean_t = clean_t + pdfReader.getPage(i).extractText()
   except:
+    ## returning error if the document is not found
     return message.message_error(500, "Error in reading the file", "Internal Server Error")
     
   
+  ## Correcting the spelling if specified
   if spell == True:
     clean_t = helper_update.spell_check(clean_t)
 
-  #hyphen special keywords
+  ## Extracting Manual Keywords
   keywords_manual = helper_update.check_manual_keywords(clean_t)
 
-  # symbol remove + hyphen + stop + lemma+ eng
+  ## Removing Symbols + hyphens + stop words + lemmatizing + removing non-english words
   keyword_corpus = helper_update.distill_string(clean_t)  
 
-  #yake kewords
+  ## Extracting the keywords from the corpus
   key = helper_update.return_keyword(keyword_corpus, 30)
 
+  ## Adding the manual and extracted keywords
   keys = keywords_manual + key
   try:
+    ## Updating the document in the database
     documents_collection.update_one(
       {"_id": ObjectId(id)}, 
       {
@@ -221,7 +244,7 @@ def add_keyword_and_cleantext():
       "cleanedText": clean_t,
       "keywords": keys,      
     }
-    return message.message_custom(data, 200, "Database updated")    
+    return message.message_custom(data, 200, "Document updated")    
   except Exception as e:
     return message.message_error(500, e, "Internal Server Error")
 
