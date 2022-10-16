@@ -340,6 +340,7 @@ def search_keywords():
 
 @app.route("/getauthtoken", methods=["POST"])
 def get_auth_token():
+  print("HELLO")
   try:
     data = request.json
     if not request.json or "username" not in data or "password" not in data:
