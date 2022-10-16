@@ -340,26 +340,29 @@ def search_keywords():
 
 @app.route("/getauthtoken", methods=["POST"])
 def get_auth_token():
-  data = request.json
-  if not request.json or "username" not in data or "password" not in data:
-    return message.message_error(400, "Username and Password are mandatory fields", "Bad Request")
+  try:
+    data = request.json
+    if not request.json or "username" not in data or "password" not in data:
+      return message.message_error(400, "Username and Password are mandatory fields", "Bad Request")
 
-  username = data["username"]
-  password = data["password"]
-  cursor = users_collection.find({"username": username, "password": password})
-  users = list(cursor)
-  if len(users) == 0:
-    return message.message_error(401, "Invalid Credentials", "Unauthorized")
-  
-  key = APP_SECRET.encode('utf-8')
-  cipher = AES.new(key, AES.MODE_EAX, nonce=NONCE.encode('utf-8'))
-  ciphertext, tag = cipher.encrypt_and_digest(username.encode('utf-8'))        
+    username = data["username"]
+    password = data["password"]
+    cursor = users_collection.find({"username": username, "password": password})
+    users = list(cursor)
+    if len(users) == 0:
+      return message.message_error(401, "Invalid Credentials", "Unauthorized")
+    
+    key = APP_SECRET.encode('utf-8')
+    cipher = AES.new(key, AES.MODE_EAX, nonce=NONCE.encode('utf-8'))
+    ciphertext, tag = cipher.encrypt_and_digest(username.encode('utf-8'))        
 
-  data = {    
-    'token':ciphertext.hex(),
-    'tag':tag.hex()
-  }
-  return message.message_custom(data, 200, "Authorization Successful")
+    data = {    
+      'token':ciphertext.hex(),
+      'tag':tag.hex()
+    }
+    return message.message_custom(data, 200, "Authorization Successful")
+  except Exception as e:
+    return message.message_error(500, e, "Internal Server Error")
 
 if __name__ == '__main__':
   app.run(debug=True)
