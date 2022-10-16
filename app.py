@@ -32,6 +32,7 @@ from helpers import update as helper_update
 from helpers import ranking as helper_ranking
 import logging
 import auth 
+from Crypto.Cipher import AES
 
 ## Getting ENV variables
 load_dotenv()
