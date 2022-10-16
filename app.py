@@ -31,6 +31,7 @@ from utils import message
 from helpers import update as helper_update
 from helpers import ranking as helper_ranking
 import logging
+import auth 
 
 ## Getting ENV variables
 load_dotenv()
@@ -75,6 +76,10 @@ get:
 """
 @app.route("/", methods=["GET"])
 def default():
+  a = auth.authorize(request, APP_SECRET, NONCE, users_collection)
+  if a['error'] == True:
+    return message.message_error(a['code'], a['message'], a['err']) 
+    
   return message.message(200, "Welcome to the eFaisla API")
 
 

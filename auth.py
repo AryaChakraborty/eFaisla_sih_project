@@ -1,6 +1,6 @@
 from utils import message
 
-def auth(request, APP_SECRET, NONCE, users_collection):
+def authorize(request, APP_SECRET, NONCE, users_collection):
     if 'token' not in request.headers or 'tag' not in request.headers:
         return {
             error: True,
