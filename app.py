@@ -86,7 +86,10 @@ Autocomplete Route
 get:
   description: Get all the keywords for autocomplete suggestions
   security:
-    - ApiKeyAuth: []
+    headers:
+      {Required}
+      - token (string) : token
+      - tag (string) : tag
   request:
     {Optional}
     - limit (int) : Number of keywords to be returned
@@ -103,8 +106,10 @@ get:
 @app.route("/autocomplete", methods=["GET"])
 def autocomplete():
   try:
+    ## Authorization check
     a = auth.authorize(request, APP_SECRET, NONCE, users_collection)
     if a['error'] == True:
+      ## returning error if authorization fails
       return message.message_error(a['code'], a['message'], a['err']) 
 
     limit = -1
@@ -157,9 +162,12 @@ Update Keywords Route
 post:
   description: Preprocess and update the clean text and keywords for a document
   security:
-    - ApiKeyAuth: []
+    headers:
+      {Required}
+      - token (string) : token
+      - tag (string) : tag
   request:
-    {Mandatory}
+    {Required}
     - id (string) : MongoDB ID of the document
     {Optional}
     - spell (true/false) : Spell check the extracted text
@@ -176,8 +184,10 @@ post:
 @app.route("/update", methods=["POST"])
 def add_keyword_and_cleantext():
   try:
+    ## Authorization check
     a = auth.authorize(request, APP_SECRET, NONCE, users_collection)
     if a['error'] == True:
+      ## returning error if authorization fails
       return message.message_error(a['code'], a['message'], a['err']) 
 
     spell = False
@@ -188,7 +198,7 @@ def add_keyword_and_cleantext():
       id = request.json['id']
     except:
       ## returning error if id is not specified
-      return message.message_error(400, "ID is a mandatory field", "Bad Request")
+      return message.message_error(400, "ID is a Required field", "Bad Request")
 
 
     ## checking if spell check is specified
@@ -271,9 +281,12 @@ Search Route
 post:
   description: Search for a keyword in the database
   security:
-  - ApiKeyAuth: []
+    headers:
+      {Required}
+      - token (string) : token
+      - tag (string) : tag
   request:
-    {Mandatory}
+    {Required}
     - search_key (list(string)) : Keyword to be searched
     {Optional}
     - top (int) : Number of documents to be returned
@@ -289,8 +302,10 @@ post:
 @app.route("/search", methods=["POST"])
 def search_keywords():
   try:
+    ## Authorization check
     a = auth.authorize(request, APP_SECRET, NONCE, users_collection)
     if a['error'] == True:
+      ## returning error if authorization fails
       return message.message_error(a['code'], a['message'], a['err']) 
 
     top = 5
@@ -298,50 +313,72 @@ def search_keywords():
 
     data = request.json
     try:
+      ## getting the query parameters
       search_key = data["search_key"]  
     except:
-      return message.message_error(400, "search_key is mandatory field", "Bad Request")
+      return message.message_error(400, "search_key is Required field", "Bad Request")
     
     if 'top' in data:    
       top = data["top"]  
+    ## checking if order matters is specified
     if 'order_matters' in data and data["order_matters"].lower() == 'false':
       order_matters = False
       
-    
+    ## Searching for the keywords in the database
     keywords_dataset_cursor = documents_collection.find({"keywords": { '$exists': True} })
     items = list(keywords_dataset_cursor)
 
+    ## docs is the dictionary of only keywords with _id as key
     docs = {}
+    ## all_docs is the list of all documents that contain the keywords with _id as key
     all_docs = {}
+
+    ## Iterating through all the documents
     for i in items:
       curr_key = str(i['_id'])
+
+      ## Adding the document to all_docs
       docs[curr_key] = i['keywords']
       all_docs[curr_key] = i
-      all_docs[curr_key]["_id"] = str(all_docs[curr_key]["_id"] )
-      for elements in all_docs[curr_key]['documents']:
-        elements["_id"] = str(elements["_id"] )
 
+      ## Converting the _id to string
+      all_docs[curr_key]["_id"] = str(all_docs[curr_key]["_id"])
+      for elements in all_docs[curr_key]['documents']:
+        if "_id" in elements:
+          elements["_id"] = str(elements["_id"])
+
+    ## Ranking is a dictionary of _id as key and the number of keywords multiplied by importance matched as value
     ranking = {}
-    for itr in docs.keys() :
+    ## Setting the initial value of ranking to 0
+    for itr in docs.keys():        
       ranking[itr] = 0
 
     try:
+      ## Iterating through all the keywords
       for itr in search_key :
         if order_matters == True:
+          ## If order matters, then the keywords should be in the same order as entered
           helper_ranking.make_ranking(docs, itr, search_key.index(itr), ranking)
         else :
+          ## If order does not matter, then the keywords can be in any order
           helper_ranking.make_ranking(docs, itr, 1, ranking)
 
+      ## Sorting the ranking dictionary in descending order
       sorted_ranking = helper_ranking.sort_dict(ranking)
+
+      ## Returning the top documents
       top_n_ranked_docs = (list(sorted_ranking.keys()))[:top]
 
       top_n_ranked_final = []
-      for itr in top_n_ranked_docs :      
+      ## Adding the documents to the final list
+      for itr in top_n_ranked_docs:      
         top_n_ranked_final.append(all_docs[itr])
 
+      ## IF no documents are found
       if len(top_n_ranked_final) == 0:
         return message.message_error(404, "No documents found", "Not Found")
         
+      ## Returning the documents
       data = {
         "docs": top_n_ranked_final,
         "count": len(top_n_ranked_final)
@@ -352,27 +389,51 @@ def search_keywords():
   except Exception as e:
     return message.message_error(500, e, "Internal Server Error")
 
+
+"""
+Get Token Route
+-----
+post:
+  description: Get token and auth for authorization to other routes
+  request:
+    {Required}
+    - username (string) : Username of the user
+    - password (string) : Password of the user    
+  responses:
+    {Success}
+    - token (string) : Token for authorization
+    - tag (string) : Tag for authorization
+    {Error}
+    - message (string) : Error message
+"""
 @app.route("/getauthtoken", methods=["POST"])
 def get_auth_token():
   try:
     data = request.json
+
+    ## Checking if the username and password are present
     if not request.json or "username" not in data or "password" not in data:
-      return message.message_error(400, "Username and Password are mandatory fields", "Bad Request")
+      return message.message_error(400, "Username and Password are Required fields", "Bad Request")
 
     username = data["username"]
     password = data["password"]
     
+    ## Checking if the user exists in the mongo database
     cursor = users_collection.find({"username": username, "password": password})
     users = list(cursor)
+
     if len(users) == 0:
-      print("User not found")
+      ## If the user does not exist, return error
       return message.message_error(401, "Invalid Credentials", "Unauthorized")
     
-    
-    key = APP_SECRET.encode('utf-8')    
-    cipher = AES.new(key, AES.MODE_EAX, nonce=NONCE.encode('utf-8'))
+    ## If the user exists, generate a token and tag
+    key = APP_SECRET.encode('utf-8')# secret is required to be bytes
+    ## Generating the token using AES encryption
+    cipher = AES.new(key, AES.MODE_EAX, nonce=NONCE.encode('utf-8'))# nonce is required to be bytes
+    ## Encrypting the username
     ciphertext, tag = cipher.encrypt_and_digest(username.encode('utf-8'))        
 
+    ## Returning the token and tag
     data = {    
       'token':ciphertext.hex(),
       'tag':tag.hex()
@@ -381,25 +442,53 @@ def get_auth_token():
   except Exception as e:
     return message.message_error(500, e, "Internal Server Error")
 
+
+"""
+Upload document Route
+-----
+post:
+  description: Upload a document to the database
+  security:
+    headers:
+      {Required}
+      - token (string) : token
+      - tag (string) : tag
+  request:
+    {Required}
+    - file (file) : File to be uploaded
+  responses:
+    {Success}
+    - document (object) : Document object
+    - documentID (string) : ID of the document
+    - licenseID (string) : license ID of the user
+    {Error}
+    - message (string) : Error message
+"""
 @app.route('/upload', methods=['POST'])
 def upload():
   try:
+    ## Authorization check
     a = auth.authorize(request, APP_SECRET, NONCE, users_collection)
     if a['error'] == True:
+      ## returning error if authorization fails
       return message.message_error(a['code'], a['message'], a['err']) 
 
+    ## Checking if the file is present
     if "user_file" not in request.files:
       return message.message_error(400, "No `user_file` in request", "Bad Request")
 
     file = request.files["user_file"]
+    ## Checking if the file name is present
     if file.filename == "":
       return message.message_error(400, "No selected file", "Bad Request")
 
     if file:
+      ## Checking if the file is a pdf
       if file.filename.split('.')[-1] not in ['pdf']:
         return message.message_error(400, "File format not supported", "Bad Request")
 
       try:
+        ## Uploading the file to AWS S3 bucket
         s3.upload_fileobj(
           file,
           bucket_name,
@@ -408,7 +497,9 @@ def upload():
               "ContentType": file.content_type 
           }
         ) 
+        ## Getting the file url
         file_url = "https://{}.s3.amazonaws.com/{}".format(bucket_name, file.filename)
+        ## Getting the licenseID of the user
         licenseID = a['licenseID']
         
         document = {
@@ -420,8 +511,10 @@ def upload():
               }
           ]
         }
+        ## Inserting the document to the mongo database
         doc = documents_collection.insert_one(document)
 
+        ## Returning the document object and the documentID
         data = {          
           'licenseID':licenseID,
           'document':document.get('documents')[0],
