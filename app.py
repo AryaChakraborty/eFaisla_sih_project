@@ -424,7 +424,7 @@ def upload():
 
         data = {          
           'licenseID':licenseID,
-          'document':document.get('documents')[0]
+          'document':document.get('documents')[0],
           'documentID':str(doc.inserted_id)
         }
         return message.message_custom(data, 200, "File uploaded successfully")
