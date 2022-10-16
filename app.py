@@ -1,6 +1,6 @@
 ## Imports
 from flask import Flask, app, request
-import boto3
+import boto3, botocore
 from io import BytesIO
 import pymongo as pym
 from bson.objectid import ObjectId
@@ -378,6 +378,61 @@ def get_auth_token():
       'tag':tag.hex()
     }
     return message.message_custom(data, 200, "Authorization Successful")
+  except Exception as e:
+    return message.message_error(500, e, "Internal Server Error")
+
+@app.route('/upload', methods=['POST'])
+def upload():
+  try:
+    a = auth.authorize(request, APP_SECRET, NONCE, users_collection)
+    if a['error'] == True:
+      return message.message_error(a['code'], a['message'], a['err']) 
+
+    if "user_file" not in request.files:
+      return message.message_error(400, "No `user_file` in request", "Bad Request")
+
+    file = request.files["user_file"]
+    if file.filename == "":
+      return message.message_error(400, "No selected file", "Bad Request")
+
+    if file:
+      if file.filename.split('.')[-1] not in ['pdf']:
+        return message.message_error(400, "File format not supported", "Bad Request")
+
+      try:
+        s3.upload_fileobj(
+          file,
+          bucket_name,
+          file.filename,
+          ExtraArgs={                    
+              "ContentType": file.content_type 
+          }
+        ) 
+        file_url = "https://{}.s3.amazonaws.com/{}".format(bucket_name, file.filename)
+        licenseID = a['licenseID']
+        
+        document = {
+          "licenseID": licenseID,
+          "documents":[
+              {                        
+                "url": file_url,
+                "fileType": "application/pdf"
+              }
+          ]
+        }
+        doc = documents_collection.insert_one(document)
+
+        data = {          
+          'licenseID':licenseID,
+          'document':document.get('documents')[0]
+          'documentID':str(doc.inserted_id)
+        }
+        return message.message_custom(data, 200, "File uploaded successfully")
+      except Exception as e:
+        return message.message_error(500, e, "Internal Server Error")
+
+    else:
+      return message.message_error(400, "No file found", "Bad Request")
   except Exception as e:
     return message.message_error(500, e, "Internal Server Error")
 

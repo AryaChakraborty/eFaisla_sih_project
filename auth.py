@@ -33,7 +33,7 @@ def authorize(request, APP_SECRET, NONCE, users_collection):
             'err': 'Unauthorized'
         }
         else:
-            return{
+            return {
                 'error': False,
                 'code': 200,
                 'message': 'Valid Token',
