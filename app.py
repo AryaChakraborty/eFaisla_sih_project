@@ -39,6 +39,8 @@ AWS_REGION = os.getenv("AWS_REGION")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 BUCKET_NAME = os.getenv("BUCKET_NAME")
+APP_SECRET = os.getenv("APP_SECRET_KEY")
+NONCE = os.getenv("NONCE")
 
 ## Creating Flask app
 app = Flask(__name__) 
@@ -50,6 +52,7 @@ logging.basicConfig(filename='record.log', level=logging.DEBUG, format=f'%(ascti
 client = pym.MongoClient(MONGO_URI)
 db = client["test"]
 documents_collection = db["documents"]
+users_collection = db["users"]
 
 ## Configuring Spacy
 nlp = spacy.load("en_core_web_sm")
@@ -329,6 +332,30 @@ def search_keywords():
   except Exception as e:
     return message.message_error(500, e, "Internal Server Error")
 
+
+@app.route("/getauthtoken", methods=["POST"])
+def get_auth_token():
+  data = request.json
+  try:
+    username = data["username"]
+    password = data["password"]
+  except:
+    return message.message_error(400, "Username and Password are mandatory fields", "Bad Request")
+
+  cursor = users_collection.find({"username": username, "password": password})
+  users = list(cursor)
+  if len(users) == 0:
+    return message.message_error(401, "Invalid Credentials", "Unauthorized")
+  
+  key = APP_SECRET.encode('utf-8')
+  cipher = AES.new(key, AES.MODE_EAX, nonce=NONCE.encode('utf-8'))
+  ciphertext, tag = cipher.encrypt_and_digest(username.encode('utf-8'))        
+
+  data = {    
+    'token':ciphertext.hex(),
+    'tag':tag.hex()
+  }
+  return message.message_custom(data, 200, "Authorization Successful")
 
 if __name__ == '__main__':
   app.run(debug=True)
