@@ -79,7 +79,7 @@ def default():
   a = auth.authorize(request, APP_SECRET, NONCE, users_collection)
   if a['error'] == True:
     return message.message_error(a['code'], a['message'], a['err']) 
-    
+
   return message.message(200, "Welcome to the eFaisla API")
 
 
@@ -341,12 +341,11 @@ def search_keywords():
 @app.route("/getauthtoken", methods=["POST"])
 def get_auth_token():
   data = request.json
-  try:
-    username = data["username"]
-    password = data["password"]
-  except:
+  if not request.json or "username" not in data or "password" not in data:
     return message.message_error(400, "Username and Password are mandatory fields", "Bad Request")
 
+  username = data["username"]
+  password = data["password"]
   cursor = users_collection.find({"username": username, "password": password})
   users = list(cursor)
   if len(users) == 0:
