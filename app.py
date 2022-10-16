@@ -40,7 +40,7 @@ AWS_REGION = os.getenv("AWS_REGION")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 BUCKET_NAME = os.getenv("BUCKET_NAME")
-APP_SECRET = os.getenv("APP_SECRET_KEY")
+APP_SECRET = os.getenv("APP_SECRET")
 NONCE = os.getenv("NONCE")
 
 ## Creating Flask app
@@ -357,10 +357,8 @@ def get_auth_token():
     
     key = APP_SECRET.encode('utf-8')    
     cipher = AES.new(key, AES.MODE_EAX, nonce=NONCE.encode('utf-8'))
-    print(cipher)
     ciphertext, tag = cipher.encrypt_and_digest(username.encode('utf-8'))        
 
-    print(ciphertext, tag)
     data = {    
       'token':ciphertext.hex(),
       'tag':tag.hex()
