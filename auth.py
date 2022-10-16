@@ -3,10 +3,10 @@ from utils import message
 def authorize(request, APP_SECRET, NONCE, users_collection):
     if 'token' not in request.headers or 'tag' not in request.headers:
         return {
-            error: True,
-            code: 401, 
-            message: 'Token or tag not provided',
-            err: 'Unauthorized'
+            'error': True,
+            'code': 401, 
+            'message': 'Token or tag not provided',
+            'err': 'Unauthorized'
         }
 
 
@@ -26,23 +26,23 @@ def authorize(request, APP_SECRET, NONCE, users_collection):
         users = list(cursor)
         if len(users) == 0:
             return {
-            error: True,
-            code: 401, 
-            message: 'Invalid Credentials',
-            err: 'Unauthorized'
+            'error': True,
+            'code': 401, 
+            'message': 'Invalid Credentials',
+            'err': 'Unauthorized'
         }
         else:
             return{
-                error: False,
-                code: 200,
-                message: 'Valid Token',
-                username: data.decode('utf-8'),
-                licenseID: users[0]['licenseID']
+                'error': False,
+                'code': 200,
+                'message': 'Valid Token',
+                'username': data.decode('utf-8'),
+                'licenseID': users[0]['licenseID']
             }
     except:
         return {
-            error: True,
-            code: 401,
-            message: 'Invalid Token',
-            err: 'Unauthorized'
+            'error': True,
+            'code': 401,
+            'message': 'Invalid Token',
+            'err': 'Unauthorized'
         }
