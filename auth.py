@@ -1,5 +1,6 @@
 from utils import message
 from Crypto.Cipher import AES
+import json
 
 def authorize(request, APP_SECRET, NONCE, users_collection):
     ## Check if token and tag are present in request
@@ -64,7 +65,7 @@ def authorize(request, APP_SECRET, NONCE, users_collection):
                 'error': False,
                 'code': 200,
                 'message': 'Valid Token',
-                'username': data.decode('utf-8'),
+                'username': data_object['username'],
                 'licenseID': users[0]['licenseID']
             }
     except:
