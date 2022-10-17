@@ -33,6 +33,8 @@ from helpers import ranking as helper_ranking
 import logging
 import auth 
 from Crypto.Cipher import AES
+import datetime
+import json
 
 ## Getting ENV variables
 load_dotenv()
@@ -430,8 +432,16 @@ def get_auth_token():
     key = APP_SECRET.encode('utf-8')# secret is required to be bytes
     ## Generating the token using AES encryption
     cipher = AES.new(key, AES.MODE_EAX, nonce=NONCE.encode('utf-8'))# nonce is required to be bytes
+
+    ## Creating the object to be encrypted
+    encr_object = {
+      "username": username,
+      "expiry": datetime.datetime.timestamp(datetime.datetime.now()) + 60*60*24*5 
+    }
+    ## Convert the object to string
+    encr_string = json.dumps(encr_object)
     ## Encrypting the username
-    ciphertext, tag = cipher.encrypt_and_digest(username.encode('utf-8'))        
+    ciphertext, tag = cipher.encrypt_and_digest(encr_string.encode('utf-8'))        
 
     ## Returning the token and tag
     data = {    
