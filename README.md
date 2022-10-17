@@ -16,6 +16,28 @@ and then, to run the server:
 
 [Postman API Documentation](https://documenter.getpostman.com/view/15506921/2s83YYEjJU)
 
+## Key Technologies and Libraries Used
+* Python
+* Flask
+* MongoDB
+* Pytessaract
+* pdf2image
+* Spacy
+* TextBlob
+* NLTK
+* YAKE
+* PIL
+* wordfreq
+* AWS S3 Bucket
+* AWS EC2 instance
+* AES Encryption
+
+## Key Features
+* Search for cases using keywords
+* Upload PDFs of cases
+* Authorization and Authentication
+* Get Keywords for auto-complete
+* Sorting algorithm for search results
 ## Keyword Extraction Procedure
 
 ![Keyword Extraction Procedure](https://res.cloudinary.com/daannhayu/image/upload/v1665977864/Picture1_w3frlo.png)
