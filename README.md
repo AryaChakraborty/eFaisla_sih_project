@@ -12,9 +12,13 @@ and then, to run the server:
 
 `python app.py`
 
-## Postman API Documentation
 
-[Postman API Documentation](https://documenter.getpostman.com/view/15506921/2s83YYEjJU)
+## Key Features
+* Search for cases using keywords
+* Upload PDFs of cases
+* Authorization and Authentication
+* Get Keywords for auto-complete
+* Sorting algorithm for search results
 
 ## Key Technologies and Libraries Used
 * Python
@@ -32,12 +36,9 @@ and then, to run the server:
 * AWS EC2 instance
 * AES Encryption
 
-## Key Features
-* Search for cases using keywords
-* Upload PDFs of cases
-* Authorization and Authentication
-* Get Keywords for auto-complete
-* Sorting algorithm for search results
+## Postman API Documentation
+
+[Postman API Documentation](https://documenter.getpostman.com/view/15506921/2s83YYEjJU)
 ## Keyword Extraction Procedure
 
 ![Keyword Extraction Procedure](https://res.cloudinary.com/daannhayu/image/upload/v1665977864/Picture1_w3frlo.png)
