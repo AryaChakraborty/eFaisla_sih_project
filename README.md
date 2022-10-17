@@ -39,7 +39,9 @@ and then, to run the server:
 ## Postman API Documentation
 
 [Postman API Documentation](https://documenter.getpostman.com/view/15506921/2s83YYEjJU)
-## Keyword Extraction Procedure
+## Preprocessing and Keyword Extraction Procedure
+
+Keyword Extraction is done using unsupervised ML algo called Yet Another Ranking Algorithm(YAKE). The keywords are then stored in the database along with the case.
 
 ![Keyword Extraction Procedure](https://res.cloudinary.com/daannhayu/image/upload/v1665977864/Picture1_w3frlo.png)
 
