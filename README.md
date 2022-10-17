@@ -19,6 +19,7 @@ and then, to run the server:
 * Authorization and Authentication
 * Get Keywords for auto-complete
 * Sorting algorithm for search results
+* Authorization using AES Encryption
 
 ## Key Technologies and Libraries Used
 * Python
